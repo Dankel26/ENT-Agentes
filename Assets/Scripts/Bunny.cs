@@ -12,9 +12,16 @@ public class Bunny : MonoBehaviour
     [Header("Bunny States")]
     public bool isAlive = true;
     public BunnyState currentState = BunnyState.Exploring;
-
     private Vector3 destination;
     private float h;
+
+    [Header("Bunny Resting")]
+    public float restDescanso = 3f; // en este limite de energia es la que el conejo empieza a descansar
+    public float restRecuperado = 7f; // apartir de 7, el conejo empieza a buscar comida
+    public float restRecuperarRate = 2f; // la cantidad de energia que recupera al descansar por segundo
+
+    [Header("Bunny Feeding")]
+    public float feedBuscando = 8f; // cuando el conejo llegue a 8 de energia, empieza a buscar comida
 
     private void Start()
     {
@@ -43,6 +50,9 @@ public class Bunny : MonoBehaviour
             case BunnyState.Fleeing:
                 Flee();
                 break;
+            case BunnyState.Resting:
+                Rest();
+                break;
         }
 
         Move();
@@ -59,8 +69,21 @@ public class Bunny : MonoBehaviour
             return;
         }
 
-        // 2. Si la energía está baja -> buscar comida
-        if (energy < 500f)
+        // si el conejo esta descansando y no ha recuperado la energia, sigue descansando
+        if (currentState == BunnyState.Resting && energy < restRecuperado)
+        {
+            return;
+        }
+
+        // si la energia llega a su limite maximo, descansa
+        if(energy <= restDescanso)
+        {
+            currentState = BunnyState.Resting;
+            return;
+        }
+
+        // 2. Si la energia llega al limite -> buscar comida
+        if (energy < feedBuscando)
         {
             Food nearestFood = FindNearestFood();
             if (nearestFood != null)
@@ -71,7 +94,7 @@ public class Bunny : MonoBehaviour
             }
         }
 
-        // 3. Si está encima de la comida -> comer
+        // 3. Si esta encima de la comida -> comer
         Collider2D foodHit = Physics2D.OverlapCircle(transform.position, 0.2f, LayerMask.GetMask("Food"));
         if (foodHit != null)
         {
@@ -101,7 +124,7 @@ public class Bunny : MonoBehaviour
             return;
         }
 
-        // Si ya llegó al destino, elegir uno nuevo
+        // Si ya llegï¿½ al destino, elegir uno nuevo
         if (Vector3.Distance(transform.position, destination) < 0.1f)
         {
             SelectNewDestination();
@@ -120,7 +143,7 @@ public class Bunny : MonoBehaviour
 
         destination = nearestFood.transform.position;
 
-        // Si está suficientemente cerca, pasar a comer
+        // Si esta suficientemente cerca, pasar a comer
         if (Vector3.Distance(transform.position, nearestFood.transform.position) < 0.2f)
         {
             currentState = BunnyState.Eating;
@@ -140,17 +163,17 @@ public class Bunny : MonoBehaviour
             }
         }
 
-        // Después de comer vuelve a explorar
+        // Despues de comer vuelve a explorar
         currentState = BunnyState.Exploring;
     }
 
     void Flee()
     {
-        // Elegir dirección contraria al depredador
+        // Elegir direccion contraria al depredador
         Vector3 fleeDir = (transform.position - GetNearestPredatorPosition()).normalized;
         destination = transform.position + fleeDir * visionRange;
 
-        // Después de huir vuelve a explorar
+        // Despues de huir vuelve a explorar
         currentState = BunnyState.Exploring;
 
         RaycastHit2D hit = Physics2D.Raycast(transform.position, fleeDir, visionRange, LayerMask.GetMask("Obstacles"));
@@ -164,6 +187,11 @@ public class Bunny : MonoBehaviour
         {
             destination = transform.position + fleeDir * visionRange;
         }
+    }
+    // el conejo se queda quieto y no se desplaza mientras descansa y recupera energia por segundo
+    void Rest()
+    {
+        energy += restRecuperarRate * h;
     }
 
     void SelectNewDestination()
@@ -191,13 +219,20 @@ public class Bunny : MonoBehaviour
 
     void Move()
     {
+        // vamos asegurar de que si el conejo esta descansando, NO se debe mover NI restar energia
+        if(currentState == BunnyState.Resting)
+        {
+            return;
+        }
+
+        // el conejo se mueve
         transform.position = Vector3.MoveTowards(
             transform.position,
             destination,
             speed * h
         );
 
-        energy -= speed * h;
+        energy -= speed * h; // quita energia cada "paso" que hace
     }
 
     void Age()
@@ -254,7 +289,7 @@ public class Bunny : MonoBehaviour
     Food FindNearestFood()
     {
         Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, visionRange, LayerMask.GetMask("Food"));
-        Debug.Log($"Bunny {name} encontró {hits.Length} colliders en su rango");
+        Debug.Log($"Bunny {name} encontrï¿½ {hits.Length} colliders en su rango");
         Food nearest = null;
         float minDist = Mathf.Infinity;
 
