@@ -4,5 +4,5 @@ public enum BunnyState
     SearchingFood,
     Fleeing,
     Eating,
-    Resting // nuevo estado
+    Resting
 }

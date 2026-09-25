@@ -76,7 +76,7 @@ public class Bunny : MonoBehaviour
         }
 
         // si la energia llega a su limite maximo, descansa
-        if(energy <= restDescanso)
+        if (energy <= restDescanso)
         {
             currentState = BunnyState.Resting;
             return;
@@ -220,7 +220,7 @@ public class Bunny : MonoBehaviour
     void Move()
     {
         // vamos asegurar de que si el conejo esta descansando, NO se debe mover NI restar energia
-        if(currentState == BunnyState.Resting)
+        if (currentState == BunnyState.Resting)
         {
             return;
         }
